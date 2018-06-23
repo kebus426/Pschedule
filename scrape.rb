@@ -1,3 +1,5 @@
+# encoding: utf-8
+
 require 'nokogiri'
 require 'open-uri'
 require 'csv'
@@ -13,5 +15,7 @@ end
 
 doc = Nokogiri::HTML.parse(html, nil, charset)
 doc.xpath('//td').each do |node|
-  p node
+  puts node.text.encode('UTF-8')
 end
+
+
