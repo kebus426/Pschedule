@@ -1,2 +1,6 @@
 .ruby-version
 node_modules/*
+log/*
+vendor/*
+.bundle/*
+tmp/pid/*
