@@ -1,2 +1,10 @@
 .ruby-version
 node_modules/*
+<<<<<<< HEAD
+log/*
+vendor/*
+.bundle/*
+tmp/pid/*
+unicorn.rb
+=======
+>>>>>>> parent of cf7486b... unicorn設定
