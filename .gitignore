@@ -1,9 +1,9 @@
-.ruby-version
-node_modules/*
-log/*
-vendor/*
-.bundle/*
-tmp/pid/*
-unicorn.rb
+/.ruby-version
+/node_modules/*
+/log/*
+/vendor/*
+/.bundle/*
+/tmp/pid/*
+/unicorn.rb
 
 
