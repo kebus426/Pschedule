@@ -4,11 +4,25 @@
         <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
     </head>
     <body>
-        
-        <div id="app">
-            {{ message }}
-        </div>
-        
-        <script src="index.js"></script>
+      <table border="1" width="500" cellspacing="0" cellpadding="5" bordercolor="#333333">
+      <tbody>
+      <% @data.each do |datum| %>
+      <tr>
+	<td id="time">
+          <%= datum["time"] %>
+	</td>
+	<td id="genre">
+          <%= datum["genre"] %>
+	</td>
+	<td id="name">
+          <%= datum["name"] %>
+	</td>
+	<td id="url">
+          <%= datum["url"] %>
+	</td>
+      </tr>
+      <% end %>
+      </tbody>
+      <script src="index.js"></script>
     </body>
 </html>

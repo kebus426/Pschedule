@@ -1,4 +1,5 @@
 require 'sinatra/base'
+require 'mysql2'
 
 class Rooting < Sinatra::Base
 
@@ -7,8 +8,10 @@ class Rooting < Sinatra::Base
   end
 
   get '/p-schedule' do
+    client = Mysql2::Client.new(host: "localhost",username: "root", password: "",database: "pschedule")
+    query = "select * from event;"
+    @data = client.query(query)
     erb :index
   end
-
 
 end
