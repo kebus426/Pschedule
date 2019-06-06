@@ -4,21 +4,36 @@
         <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
     </head>
     <body>
+
+      <ul id="year">
+	<% for yr in Range.new(2016,@thisYear) do%>
+	<a href=<%="?ey=#{yr}&em=01"%>><%=yr%></a>
+	<% end%>	
+      </ul>
+      <ul id="month">
+	<% for mth in 1..12 do %>
+	  <a href=<%="?ey=#{@year}&em=#{mth}"%>><%=mth%></a>
+	<% end %>
+      </ul>
+      <h1><%= "#{@year}年#{@month}月"%></h1>
       <table border="1" width="500" cellspacing="0" cellpadding="5" bordercolor="#333333">
       <tbody>
       <% @data.each do |datum| %>
       <tr>
 	<td id="time">
-          <%= datum["time"] %>
+          <%= datum["day"].strftime("%d %H:%M") %>
+	</td>
+	<td id="special">
+	  <%= datum["special"]%>
 	</td>
 	<td id="genre">
           <%= datum["genre"] %>
 	</td>
 	<td id="name">
-          <%= datum["name"] %>
+          <a href=<%= "\"#{datum["url"]}\"" %> class="text-link" > <%= datum["name"] %></a>
 	</td>
-	<td id="url">
-          <%= datum["url"] %>
+	<td id="performance">
+	  <%= datum["performance"] %>
 	</td>
       </tr>
       <% end %>
