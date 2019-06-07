@@ -13,8 +13,30 @@ def rubyDateToSqlDate(year,month,day,hour,minute,second)
   return "#{year}-#{format('%.2d',month)}-#{format('%.2d',day)} #{format('%.2d',hour)}:#{format('%.2d',minute)}:#{format('%.2d',second)}"
 end
 
+def normalize(text)
+  text = UNF::Normalizer.normalize(text, :nfkc)
+  text.gsub!(/-/,'～')
+  text.gsub!(/ /,'')
+  return text
+end
+
+def dataInclude?(array,elms,keywords)
+  isIncluded = true
+  keywords.each do |keyword|
+    isIncluded = isIncluded and array.any?{|aElms| aElms[keyword] == elms[keyword]}
+  end
+  return isIncluded
+end
+
 url = 'https://idolmaster.jp/schedule/'
 t = Time.now
+
+  
+client = Mysql2::Client.new(host: "localhost",username: "root", password: "",database: "pschedule")
+  
+existData = client.query("SELECT day, name, performance FROM time NATURAL JOIN event NATURAL JOIN performance")
+
+newData = {}
 
 for num in 0..1 do
 
@@ -33,16 +55,7 @@ for num in 0..1 do
   
   day = 0
   doc = Nokogiri::HTML.parse(html, nil, charset)
-  
-  client = Mysql2::Client.new(host: "localhost",username: "root", password: "",database: "pschedule")
-  
-  resultEvent = client.query("SELECT genre, name FROM event")
-  resultPerformance = client.query("SELECT name, performance FROM performance")
-  resultTime = client.query("SELECT day, name FROM time WHERE day>='#{rubyDateToSqlDate(year,month,1,0,0,0)}'")
-  
-  #今回追加したやつの名前(追加してなくても入れている。問題がないので)
-  newNames = []
-  
+
   doc.xpath('//tr').each do |trNode|
     eventData = {}
     eventTime = []
@@ -51,45 +64,40 @@ for num in 0..1 do
       next if tdNode['class'] == nil
       case tdNode['class']
       when 'week2'
-        eventData[:week] = tdNode.text.encode('UTF-8') if tdNode.text != ''
+        eventData["week"] = tdNode.text.encode('UTF-8') if tdNode.text != ''
       when 'genre2'
-        eventData[:genre] = tdNode.text.encode('UTF-8') if tdNode.text != '' 
+        eventData["genre"] = tdNode.text.encode('UTF-8') if tdNode.text != '' 
       when 'day2';
         day += 1
-        eventData[:id] = day
       when 'performance2';
         tdNode.css('img').each do |nd|
-          eventData[:performance] = nd['alt'] if nd['alt'] != nil
+          eventData["performance"] = nd['alt'] if nd['alt'] != nil
         end
       when 'article2';
         tdNode.css('a').each do |nd|
-          eventData[:url] =  nd['href'] if nd['href'] != nil
+          eventData["url"] =  nd['href'] if nd['href'] != nil
         end
-        eventData[:name] = UNF::Normalizer.normalize(tdNode.text.encode('UTF-8'), :nfkc) if tdNode.text != '' 
+        eventData["name"] = tdNode.text.encode('UTF-8') if tdNode.text != '' 
       when 'time2'
         text = tdNode.text.encode('UTF-8')
-        text = UNF::Normalizer.normalize(text, :nfkc)
-        if not text.include?('～') and not text.include?(':') and not text.include?('-') and text != '' 
+        text = normalize(text)
+        if not text.include?('～') and not text.include?(':') and text != ''
           eventTime.push(DateTime.new(year,month,day))
-          #        eventSpecial.push(text)
-          eventData[:special] = text
+          eventData["special"] = text
         elsif text != ''
-          text.gsub!(/-/,'～')
-          text.gsub!(/ /,'')
           time = text.split('～')
           if(time[0].include?(':'))
             date = time[0].split(':')
-            insertDate = DateTime.new(year.to_i,month.to_i,day.to_i,date[0].to_i%24,date[1].to_i,0) + date[0].to_i/24
-            eventTime.push(insertDate)
+            eventTime.push(DateTime.new(year.to_i,month.to_i,day.to_i,time[0].to_i,time[1].to_i,0))
           else
             index = 0
             time.each do |date|
               d = date.split('/')
               if index == 0
-                eventData[:special]='開始日'
+                eventData["special"] = '開始日'
                 index += 1
               else
-                eventData[:special]='終了日'
+                eventData["special"] = '終了日'
               end
               if month > d[0].to_i
                 eventTime.push(DateTime.new(year.to_i+1,d[0].to_i,d[1].to_i,0,0,0))
@@ -102,29 +110,42 @@ for num in 0..1 do
       end
     end
     
-  
-  
     eventTime.each do |time|
-      if not resultEvent.any?{|elm| elm["name"] == eventData[:name]} and not newNames.any?{|elm| elm == eventData[:name]}
-        query = "insert into event (genre,name,url) values (\"#{eventData[:genre]}\",\"#{eventData[:name]}\",\"#{eventData[:url]}\")"
+
+      puts existData.any?{|elm| elm["name"] == eventData["name"]}
+      if not existData.any?{|elm| elm["name"] == eventData["name"]} and not newData.any?{|elm| elm["name"] == eventData["name"]}
+        query = "insert into event (genre,name,url) values (\"#{eventData["genre"]}\",\"#{eventData["name"]}\",\"#{eventData["url"]}\")"
         client.query(query)
       end
-      if not resultTime.any?{|elm| elm["name"] == eventData[:name]} and not resultTime.any?{|elm| elm["day"] == rubyDateToSqlDate(time.year,time.month,time.day,time.hour,time.minute,time.second)} 
-        query = "insert into time (day,name,special) values ('#{rubyDateToSqlDate(time.year,time.month,time.day,time.hour,time.minute,time.second)}',\"#{eventData[:name]}\",\"#{eventData[:special]}\")"
+      
+      #今回追加したやつの名前(追加してなくても入れている
+      puts day = rubyDateToSqlDate(time.year,time.month,time.day,time.hour,time.minute,time.second)
+      puts day 
+      puts '2019-06-03 21:00:00 +0900' == day
+      puts existData.any?{|elm| elm["day"] == (day)}
+      puts eventData["name"]
+      #      existData.select{|elm| elm["name"] == 'デレラジ☆(スター)'}.each do |hoge|
+      #        puts hoge["day"]
+      #      end
+      if not existData.any?{|elm| elm["name"] == eventData["name"] and elm["day"] == day} and not newData.any?{|elm| elm["name"] == eventData["name"] and elm["day"] == day}
+        query = "insert into time (day,name,special) values ('#{rubyDateToSqlDate(time.year,time.month,time.day,time.hour,time.minute,time.second)}',\"#{eventData["name"]}\",\"#{eventData["special"]}\")"
         client.query(query)
       end
-      if not resultPerformance.any?{|elm| elm["name"] == eventData[:name]} and not newNames.any?{|elm| elm == eventData[:name]}
-        query = "insert into performance (name,performance) values (\"#{eventData[:name]}\",\"#{eventData[:performance]}\")"
+      
+      puts "debug"
+      if not dataInclud?(existData,eventData,["name","performance"]) and not dataIncluded?(newData,eventData,["name","performance"])
+        query = "insert into performance (name,performance) values (\"#{eventData["name"]}\",\"#{eventData["performance"]}\")"
         client.query(query)
       end
-      if not newNames.any?{|elm| elm == eventData[:name]}
-        puts eventData[:name]
-        newNames.push(eventData[:name])
+      
+      if not dataInclud?(newData,eventData,["name","performance","day"]) and not dataIncluded?(existData,eventData,["name","performance","day"])
+        newElm["name"] = eventData["name"]
+        newElm["performance"] = eventData["performance"]
+        newElm["day"] =  day
+        newData.push(newElm)
       end
     end
-  end
-                                                  
-                             
+  end                                                                    
 end                             
 
 
