@@ -10,6 +10,7 @@ class Rooting < Sinatra::Base
   end
 
   get '/p-schedule' do
+    client = Mysql2::Client.new(host: "localhost",username: "root", password: "",database: "pschedule")
     @year = 0
     @month = 0
     begin
@@ -22,12 +23,19 @@ class Rooting < Sinatra::Base
     @thisYear = Time.now.year
     targetMonthS = DateTime.new(@year,@month,1,0,0,0)
     targetMonthE = (targetMonthS >> 1)
-    client = Mysql2::Client.new(host: "localhost",username: "root", password: "",database: "pschedule")
     query = "SELECT * FROM event NATURAL JOIN performance NATURAL JOIN time WHERE day >= \'#{rubyDateToSqlDate2(targetMonthS)}\' AND day < \'#{rubyDateToSqlDate2(targetMonthE)}\' ORDER BY day;"
     @data = client.query(query)
     erb :index
   end
 
+  get '/p-schedule/items/:id' do
+    client = Mysql2::Client.new(host: "localhost",username: "root", password: "",database: "pschedule")
+    query = "SELECT * FROM event NATURAL JOIN performance NATURAL JOIN time WHERE id = #{params[:id]}"
+    @data = client.query(query)
+    erb :items
+
+  end
+  
 
   def rubyDateToSqlDate(year,month,day,hour,minute,second)
     return "#{year}-#{format('%.2d',month)}-#{format('%.2d',day)} #{format('%.2d',hour)}:#{format('%.2d',minute)}:#{format('%.2d',second)}"
