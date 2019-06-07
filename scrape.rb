@@ -20,21 +20,17 @@ def normalize(text)
   return text
 end
 
-def dataInclude?(array,elms,keywords)
-  isIncluded = true
-  keywords.each do |keyword|
-    isIncluded = isIncluded and array.any?{|aElms| aElms[keyword] == elms[keyword]}
-  end
-  return isIncluded
-end
-
 url = 'https://idolmaster.jp/schedule/'
 t = Time.now
 
   
 client = Mysql2::Client.new(host: "localhost",username: "root", password: "",database: "pschedule")
   
-existData = client.query("SELECT day, name, performance FROM time NATURAL JOIN event NATURAL JOIN performance")
+existData = client.query("SELECT day, name, performance FROM time NATURAL JOIN event NATURAL JOIN performance ORDER BY day")
+
+#existData.each do |elm|
+#  puts elm["name"]
+#end
 
 newData = {}
 
@@ -71,13 +67,13 @@ for num in 0..1 do
         day += 1
       when 'performance2';
         tdNode.css('img').each do |nd|
-          eventData["performance"] = nd['alt'] if nd['alt'] != nil
+          eventData["performance"] = nd['alt'].split('、') if nd['alt'] != nil
         end
       when 'article2';
         tdNode.css('a').each do |nd|
           eventData["url"] =  nd['href'] if nd['href'] != nil
         end
-        eventData["name"] = tdNode.text.encode('UTF-8') if tdNode.text != '' 
+        eventData["name"] = UNF::Normalizer.normalize(tdNode.text.encode('UTF-8'), :nfkc) if tdNode.text != '' 
       when 'time2'
         text = tdNode.text.encode('UTF-8')
         text = normalize(text)
@@ -111,38 +107,32 @@ for num in 0..1 do
     end
     
     eventTime.each do |time|
-
-      puts existData.any?{|elm| elm["name"] == eventData["name"]}
       if not existData.any?{|elm| elm["name"] == eventData["name"]} and not newData.any?{|elm| elm["name"] == eventData["name"]}
         query = "insert into event (genre,name,url) values (\"#{eventData["genre"]}\",\"#{eventData["name"]}\",\"#{eventData["url"]}\")"
         client.query(query)
       end
       
+      dayStr = rubyDateToSqlDate(time.year,time.month,time.day,time.hour,time.minute,time.second)
+      
       #今回追加したやつの名前(追加してなくても入れている
-      puts day = rubyDateToSqlDate(time.year,time.month,time.day,time.hour,time.minute,time.second)
-      puts day 
-      puts '2019-06-03 21:00:00 +0900' == day
-      puts existData.any?{|elm| elm["day"] == (day)}
-      puts eventData["name"]
-      #      existData.select{|elm| elm["name"] == 'デレラジ☆(スター)'}.each do |hoge|
-      #        puts hoge["day"]
-      #      end
-      if not existData.any?{|elm| elm["name"] == eventData["name"] and elm["day"] == day} and not newData.any?{|elm| elm["name"] == eventData["name"] and elm["day"] == day}
-        query = "insert into time (day,name,special) values ('#{rubyDateToSqlDate(time.year,time.month,time.day,time.hour,time.minute,time.second)}',\"#{eventData["name"]}\",\"#{eventData["special"]}\")"
+      if not existData.any?{|elm| elm["name"] == eventData["name"] and elm["day"].to_s == dayStr + " +0900"} and not newData.any?{|elm| elm["name"] == eventData["name"] and elm["day"] == dayStr}
+        query = "insert into time (day,name,special) values ('#{dayStr}',\"#{eventData["name"]}\",\"#{eventData["special"]}\")"
         client.query(query)
       end
-      
-      puts "debug"
-      if not dataInclud?(existData,eventData,["name","performance"]) and not dataIncluded?(newData,eventData,["name","performance"])
-        query = "insert into performance (name,performance) values (\"#{eventData["name"]}\",\"#{eventData["performance"]}\")"
-        client.query(query)
-      end
-      
-      if not dataInclud?(newData,eventData,["name","performance","day"]) and not dataIncluded?(existData,eventData,["name","performance","day"])
-        newElm["name"] = eventData["name"]
-        newElm["performance"] = eventData["performance"]
-        newElm["day"] =  day
-        newData.push(newElm)
+
+      eventData["performance"].each do |perfo|  
+        if not existData.any?{|elm| elm["name"] == eventData["name"] and elm["performance"] == perfo}  and not newData.any?{|elm| elm["name"] == eventData["name"] and elm["performance"] == perfo} 
+          query = "insert into performance (name,performance) values (\"#{eventData["name"]}\",\"#{perfo}\")"
+          client.query(query)
+        end
+        
+        #day,name,performanceだけ切り出して==で比較する?
+        if not existData.any?{|elm| elm["name"] == eventData["name"] and elm["performance"] == perfo and elm["day"] == eventData["day"]} and not not newData.any?{|elm| elm["name"] == eventData["name"] and elm["performance"] == perfo and elm["day"] == eventData["day"]}
+          newElm["name"] = eventData["name"]
+          newElm["performance"] = perfo
+          newElm["day"] =  dayStr
+          newData.push(newElm)
+        end
       end
     end
   end                                                                    
