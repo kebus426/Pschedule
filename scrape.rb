@@ -15,13 +15,13 @@ end
 
 def normalize(text)
   text = UNF::Normalizer.normalize(text, :nfkc)
-  text.gsub!(/-/,'～')
+  text.gsub!(/-|〜/,'～')
   text.gsub!(/ /,'')
   return text
 end
 
 url = 'https://idolmaster.jp/schedule/'
-t = Time.now
+t = Time.new(2016,7,1,0,0,0)#Time.now
 
   
 client = Mysql2::Client.new(host: "localhost",username: "root", password: "",database: "pschedule")
@@ -32,9 +32,9 @@ existData = client.query("SELECT day, name, performance FROM time NATURAL JOIN e
 #  puts elm["name"]
 #end
 
-newData = {}
+newData = []
 
-for num in 0..1 do
+for num in 0..40 do
 
   month = if t.month + num > 12 then (t.month + num) % 12 else t.month + num end
   month = 12 if month == 0
@@ -84,7 +84,7 @@ for num in 0..1 do
           time = text.split('～')
           if(time[0].include?(':'))
             date = time[0].split(':')
-            eventTime.push(DateTime.new(year.to_i,month.to_i,day.to_i,time[0].to_i,time[1].to_i,0))
+            eventTime.push(DateTime.new(year.to_i,month.to_i,day.to_i,date[0].to_i % 24,date[1].to_i % 24,0) + date[0].to_i / 24)
           else
             index = 0
             time.each do |date|
@@ -127,7 +127,8 @@ for num in 0..1 do
         end
         
         #day,name,performanceだけ切り出して==で比較する?
-        if not existData.any?{|elm| elm["name"] == eventData["name"] and elm["performance"] == perfo and elm["day"] == eventData["day"]} and not not newData.any?{|elm| elm["name"] == eventData["name"] and elm["performance"] == perfo and elm["day"] == eventData["day"]}
+        if not existData.any?{|elm| elm["name"] == eventData["name"] and elm["performance"] == perfo and elm["day"] == eventData["day"]} and not newData.any?{|elm| elm["name"] == eventData["name"] and elm["performance"] == perfo and elm["day"] == eventData["day"]}
+          newElm = {}
           newElm["name"] = eventData["name"]
           newElm["performance"] = perfo
           newElm["day"] =  dayStr
