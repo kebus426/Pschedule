@@ -84,7 +84,7 @@ for num in 0..40 do
           time = text.split('～')
           if(time[0].include?(':'))
             date = time[0].split(':')
-            eventTime.push(DateTime.new(year.to_i,month.to_i,day.to_i,date[0].to_i % 24,date[1].to_i % 24,0) + date[0].to_i / 24)
+            eventTime.push(DateTime.new(year.to_i,month.to_i,day.to_i,date[0].to_i % 24,date[1].to_i,0) + date[0].to_i / 24)
           else
             index = 0
             time.each do |date|
