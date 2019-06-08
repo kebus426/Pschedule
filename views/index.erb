@@ -12,22 +12,26 @@
 <h1><%= "#{@year}年#{@month}月"%></h1>
 <table border="1" width="500" cellspacing="0" cellpadding="5" bordercolor="#333333">
   <tbody>
-    <% @data.each do |datum| %>
+    <% @events.each do |event| %>
     <tr>
       <td id="time">
-        <%= datum["day"].strftime("%d %H:%M") %>
+        <%= event["day"].strftime("%d %H:%M") %>
       </td>
       <td id="special">
-	<%= datum["special"]%>
+	<%= event["special"]%>
       </td>
       <td id="genre">
-        <%= datum["genre"] %>
+        <%= event["genre"] %>
       </td>
       <td id="name">
-        <a href=<%= "\"p-schedule/items/#{datum["id"]}\"" %> class="text-link" > <%= datum["name"] %></a>
+        <a href=<%= "\"p-schedule/items/#{event["id"]}\"" %> class="text-link" > <%= event["name"] %></a>
       </td>
       <td id="performance">
-	<%= datum["performance"] %>
+	<% text = "" %>
+	<% @performance.select{|elm| elm["name"] == event["name"]}.each do |perfo|%>
+	<% text += perfo["performance"] + " " %>
+	<% end%>
+	<%= text %>
       </td>
     </tr>
     <% end %>

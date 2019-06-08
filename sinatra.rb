@@ -23,8 +23,9 @@ class Rooting < Sinatra::Base
     @thisYear = Time.now.year
     targetMonthS = DateTime.new(@year,@month,1,0,0,0)
     targetMonthE = (targetMonthS >> 1)
-    query = "SELECT * FROM event NATURAL JOIN performance NATURAL JOIN time WHERE day >= \'#{rubyDateToSqlDate2(targetMonthS)}\' AND day < \'#{rubyDateToSqlDate2(targetMonthE)}\' ORDER BY day;"
-    @data = client.query(query)
+    query = "SELECT * FROM event NATURAL JOIN time WHERE day >= \'#{rubyDateToSqlDate2(targetMonthS)}\' AND day < \'#{rubyDateToSqlDate2(targetMonthE)}\' ORDER BY day;"
+    @events = client.query(query)
+    @performance = client.query("SELECT *  FROM  performance")
     erb :index
   end
 
@@ -32,6 +33,7 @@ class Rooting < Sinatra::Base
     client = Mysql2::Client.new(host: "localhost",username: "root", password: "",database: "pschedule")
     query = "SELECT * FROM event NATURAL JOIN performance NATURAL JOIN time WHERE id = #{params[:id]}"
     @data = client.query(query)
+    @performance = client.query("SELECT *  FROM  performance")
     erb :items
 
   end

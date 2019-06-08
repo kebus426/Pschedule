@@ -2,11 +2,11 @@
 USE pschedule;
 
 -- パフォーマンスはわける
--- DROP TABLE performance;
--- DROP TABLE time;
--- DROP TABLE event;
+DROP TABLE IF EXISTS performance;
+DROP TABLE IF EXISTS time;
 DROP TABLE IF EXISTS user;
 DROP TABLE IF EXISTS user_bought;
+DROP TABLE IF EXISTS event;
 
 CREATE TABLE IF NOT EXISTS event(
                             id INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
