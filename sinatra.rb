@@ -2,8 +2,12 @@
 require 'sinatra/base'
 require 'mysql2'
 require 'date'
+require 'bcrypt'
 
 class Rooting < Sinatra::Base
+  
+  enable :sessions
+  set :session_secret, "My session secret"
   
   get '/' do
     'Hello world!'
@@ -31,13 +35,63 @@ class Rooting < Sinatra::Base
 
   get '/p-schedule/items/:id' do
     client = Mysql2::Client.new(host: "localhost",username: "root", password: "",database: "pschedule")
-    query = "SELECT * FROM event NATURAL JOIN performance NATURAL JOIN time WHERE id = #{params[:id]}"
-    @data = client.query(query)
+    query = client.prepare("SELECT * FROM event NATURAL JOIN performance NATURAL JOIN time WHERE id = ?")
+    @data = query.execute(params[:id])
     @performance = client.query("SELECT *  FROM  performance")
     erb :items
 
   end
+
+  get '/p-schedule/sign_up' do
+    session[:user_id] ||= nil 
+  if session[:user_id]
+    redirect '/p-schedule/log_out' #logout form
+  end 
+
+  erb :sign_up
+  end
+
+  get '/p-schedule/log_out' do
+  end 
+
+  post '/p-schedule/user/new' do
+    #if params[:password] != params[:confirm_password]
+    #  redirect '/p-schedule/sign_up'
+    #end
+
+    begin
+      client = Mysql2::Client.new(host: "localhost",username: "root", password: "",database: "pschedule")
+      query = client.prepare"INSERT INTO user (name, password, password_salt) VALUES(?,?,?)"
+      password_info = encrypt_password(params[:password])
+      query.execute(params[:name], password_info["password"],password_info["password_salt"])
+      params[:user_id] = client.prepare("SELECT id FROM user WHERE name = ?").execute(params[:name])
+      redirect '/p-schedule'
+    #rescue => ex 
+    #  puts ex
+    #  redirect '/p-schedule/sign_up'
+    end
   
+  end
+  
+  def authenticate(name, password)
+    client = Mysql2::Client.new(host: "localhost",username: "root", password: "",database: "pschedule")
+    query = client.prepare("SELECT * FROM user WHERE name = ?")
+    user = query.execute(name)
+    if user && user["password"] == BCrypt::Engine.hash_secret(password, user["password_salt"])
+      user
+    else
+      nil 
+    end 
+  end 
+
+  def encrypt_password(password)
+    if password
+      ret = {}
+      ret["password_salt"] = BCrypt::Engine.generate_salt
+      ret["password"] = BCrypt::Engine.hash_secret(password, ret["password_salt"])
+      return ret
+    end 
+  end 
 
   def rubyDateToSqlDate(year,month,day,hour,minute,second)
     return "#{year}-#{format('%.2d',month)}-#{format('%.2d',day)} #{format('%.2d',hour)}:#{format('%.2d',minute)}:#{format('%.2d',second)}"

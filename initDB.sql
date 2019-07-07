@@ -39,13 +39,10 @@ CREATE TABLE IF NOT EXISTS time(
                            ) ;
 
 CREATE TABLE IF NOT EXISTS user (
-                            id INTEGER NOT NULL AUTO_INCREMENT,
-                            email VARCHAR(255) NOT NULL,
-                            url VARCHAR(255) NOT NULL,
-                            password VARCHAR(255) NOT NULL,
-                            password_confirmation VARCHAR(255) NOT NULL,
-                            created_at DATETIME NOT NULL,
-                            updated_at DATETIME NOT NULL,
+                            id INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+                            name VARCHAR(255) UNIQUE NOT NULL,
+                            password VARCHAR(1000) NOT NULL,
+                            password_salt VARCHAR(255) NOT NULL,
                             PRIMARY KEY(id)
                            ) ;
 
