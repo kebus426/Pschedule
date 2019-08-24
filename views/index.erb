@@ -1,4 +1,6 @@
-<html>
+<div class="app">
+  <h1 v-text="message"></h1>
+
 <ul id="year">
   <% for yr in Range.new(2016,@thisYear) do%>
   <a href=<%="?ey=#{yr}&em=01"%>><%=yr%></a>
@@ -10,30 +12,50 @@
   <% end %>
 </ul>
 <h1><%= "#{@year}年#{@month}月"%></h1>
-<table border="1" width="500" cellspacing="0" cellpadding="5" bordercolor="#333333">
+<table  border="1" cellspacing="0" cellpadding="5" bordercolor="#333333">
   <tbody>
+    <tr id="tableHeader">
+      <td class="time">時間</td>
+      <td class="special">特殊事項</td>
+      <td class="genre">ジャンル</td>
+      <td class="name">イベント名</td>
+      <td class="performance">出演</td>
+      <% if session[:user_id] %>
+      <td class="favorite">お気に入り</td>
+      <td class="bought">購入済み</td>
+      <% end %>
+    </tr>
     <% @events.each do |event| %>
-    <tr>
-      <td id="time">
+    <tr class="tableRow">
+      <td class="time">
         <%= event["day"].strftime("%d %H:%M") %>
       </td>
-      <td id="special">
-	<%= event["special"]%>
+      <td class="special">
+	      <%= event["special"]%>
       </td>
-      <td id="genre">
+      <td class="genre">
         <%= event["genre"] %>
       </td>
-      <td id="name">
+      <td class="name">
         <a href=<%= "\"p-schedule/items/#{event["id"]}\"" %> class="text-link" > <%= event["name"] %></a>
       </td>
-      <td id="performance">
-	<% text = "" %>
-	<% @performance.select{|elm| elm["name"] == event["name"]}.each do |perfo|%>
-	<% text += perfo["performance"] + " " %>
-	<% end%>
-	<%= text %>
+      <td class="performance">
+	      <% text = "" %>
+	      <% @performance.select{|elm| elm["name"] == event["name"]}.each do |perfo|%>
+	        <% text += perfo["performance"] + " " %>
+	      <% end%>
+	      <%= text %>
       </td>
+      <% if session[:user_id] %>
+      <td class="button">
+          <favorite :eventid=<%= event["id"]%> ></favorite>
+      </td>
+      <td class="button">
+          <button>未購入</button
+      </td>
+      <% end %>
     </tr>
     <% end %>
   </tbody>
-</html>
+</table>
+</div>

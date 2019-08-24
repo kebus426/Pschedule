@@ -26,8 +26,15 @@ class Rooting < Sinatra::Base
       @thisYear = Time.now.year
       targetMonthS = DateTime.new(@year,@month,1,0,0,0)
       targetMonthE = (targetMonthS >> 1)
-      query = "SELECT * FROM event NATURAL JOIN time WHERE day >= \'#{rubyDateToSqlDate2(targetMonthS)}\' AND day < \'#{rubyDateToSqlDate2(targetMonthE)}\' ORDER BY day;"
-      @events = client.query(query)
+      if session[:user_id]
+        query = client.prepare("SELECT * FROM time NATURAL JOIN (event  LEFT JOIN (SELECT user_id,event_id FROM user_favorite) AS favorite ON event.id=favorite.event_id AND favorite.user_id=?) WHERE day >= \'#{rubyDateToSqlDate2(targetMonthS)}\' AND day < \'#{rubyDateToSqlDate2(targetMonthE)}\' ORDER BY day;")
+        @events = query.execute(session[:user_id])
+      else
+        querySimple = "SELECT * FROM event NATURAL JOIN time WHERE day >= \'#{rubyDateToSqlDate2(targetMonthS)}\' AND day < \'#{rubyDateToSqlDate2(targetMonthE)}\' ORDER BY day;"
+        @events = client.query(querySimple)
+      end
+      
+     
       @performance = client.query("SELECT *  FROM  performance")
       erb :index
     end
@@ -69,6 +76,8 @@ class Rooting < Sinatra::Base
     end
   
     get '/log_out' do
+      session[:user_id] = nil
+      redirect 'p-schedule'
     end 
   
     #user登録
@@ -95,22 +104,43 @@ class Rooting < Sinatra::Base
     end
 
     #userページ
-    get 'mypage' do
+    get '/mypage' do
       client = MakeClient()
-      result = client.prepare("SELECT * FROM user WHERE id = ?").execute(session[:user_id])
+      result = client.prepare("SELECT name, id FROM user WHERE id = ?").execute(session[:user_id])
       if(result)
-        @user = user.first
-        user_bought_result = client.query("SELECT * FROM user_bought WHERE user_id = #{@user.id}")
-        @user_bought = user_bought_result ? user_bought_result.first : nil
+        user = result.first
+        @username = user["name"]
+        @user_favorite = client.query("SELECT * FROM event NATURAL JOIN user_favorite WHERE user_id = #{user["id"]}")
         erb :mypage
       else
         redirect '/p-schedule/sign_up'
       end
-      
+    end
+
+    post '/favorite/new' do
+      id = request.body.read.delete("eventid=")
+      client = MakeClient()
+      result = client.prepare("SELECT * FROM event WHERE id = ?").execute(id)
+      item = result ? result.first : nil
+      if(item && session[:user_id])
+        client.prepare("INSERT INTO user_favorite (user_id,event_id) VALUES(?,?)").execute(session[:user_id],id)
+        @data = "success"
+      else 
+        if request.body.read == "eventid=9"
+          @data = "maji?"
+        else
+          @data = request.body.read
+        end
+        
+      end
+    end
+
+    post '/favorite/delete' do
     end
 
   end
   
+ 
 
 
 #関数
