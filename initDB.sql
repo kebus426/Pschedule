@@ -7,6 +7,7 @@ DROP TABLE IF EXISTS time;
 DROP TABLE IF EXISTS user;
 DROP TABLE IF EXISTS user_bought;
 DROP TABLE IF EXISTS event;
+DROP TABLE IF EXISTS user_favorite;
 
 CREATE TABLE IF NOT EXISTS event(
                             id INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -48,8 +49,23 @@ CREATE TABLE IF NOT EXISTS user (
 
 CREATE TABLE IF NOT EXISTS user_bought(
                            id INTEGER NOT NULL AUTO_INCREMENT,
-                           user_id INTEGER NOT NULL,
-                           event_id INTEGER NOT NULL,
+                           user_id INTEGER UNSIGNED NOT NULL,
+                           event_id INTEGER UNSIGNED NOT NULL,
+                           PRIMARY KEY(id),
+                           FOREIGN KEY(user_id)
+                                   REFERENCES user (id)
+                                   ON UPDATE CASCADE
+                                   ON DELETE CASCADE,
+                           FOREIGN KEY(event_id)
+                                   REFERENCES event(id)                                   
+                                   ON UPDATE CASCADE
+                                   ON DELETE CASCADE
+                           ) ;
+
+CREATE TABLE IF NOT EXISTS user_favorite(
+                           id INTEGER NOT NULL AUTO_INCREMENT,
+                           user_id INTEGER UNSIGNED NOT NULL,
+                           event_id INTEGER UNSIGNED NOT NULL,
                            PRIMARY KEY(id),
                            FOREIGN KEY(user_id)
                                    REFERENCES user (id)
