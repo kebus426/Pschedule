@@ -4,6 +4,7 @@ require 'mysql2'
 require 'date'
 require 'bcrypt'
 require 'sinatra/namespace'
+require 'mysql2-cs-bind'
 
 class Rooting < Sinatra::Base
   register Sinatra::Namespace
@@ -16,26 +17,88 @@ class Rooting < Sinatra::Base
       client =  MakeClient()
       @year = 0
       @month = 0
-      begin
-        @year = params['ey'] ? params['ey'].to_i : Time.now.year
-        @month = params['em'] ? params['em'].to_i : Time.now.month
-      rescue
-        @year = Time.now.year
-        @month = Time.now.month
-      end
-      @thisYear = Time.now.year
-      targetMonthS = DateTime.new(@year,@month,1,0,0,0)
-      targetMonthE = (targetMonthS >> 1)
-      if session[:user_id]
-        query = client.prepare("SELECT * FROM time NATURAL JOIN (event  LEFT JOIN (SELECT user_id,event_id FROM user_favorite) AS favorite ON event.id=favorite.event_id AND favorite.user_id=?) WHERE day >= \'#{rubyDateToSqlDate2(targetMonthS)}\' AND day < \'#{rubyDateToSqlDate2(targetMonthE)}\' ORDER BY day;")
-        @events = query.execute(session[:user_id])
+      @spanFlag = (params.has_key?('start_year') && params['start_year'] != '') || (params.has_key?('end_year') && params['end_year'] != '')
+      if @spanFlag
+        if params.has_key?('start_year') && params['start_year'] != ''
+          monthS = params.has_key?('start_month') ? params['start_month'].to_i : 1
+          @spanStart = DateTime.new(params['start_year'].to_i,monthS,1,0,0,0)
+        else 
+          @spanStart = DateTime.new(2015,1,1,0,0,0,0)
+        end
+
+        if params.has_key?('end_year') && params['end_year'] != ''
+          monthE = params.has_key?('end_month') ? params['end_month'].to_i : 1
+          @spanEnd = DateTime.new(params['end_year'].to_i,monthE,1,0,0,0)
+        else 
+          @spanEnd = (DateTime.now >> 1)
+        end
       else
-        querySimple = "SELECT * FROM event NATURAL JOIN time WHERE day >= \'#{rubyDateToSqlDate2(targetMonthS)}\' AND day < \'#{rubyDateToSqlDate2(targetMonthE)}\' ORDER BY day;"
-        @events = client.query(querySimple)
+        @year = params.has_key?('ey') ? params['ey'].to_i : Time.now.year
+        @month = params.has_key?('em') ? params['em'].to_i : Time.now.month
+        @spanStart = DateTime.new(@year,@month,1,0,0,0)
+        @spanEnd = (@spanStart >> 1)
       end
       
-     
-      @performance = client.query("SELECT *  FROM  performance")
+      genres = ["CD","webラジオ","web配信","雑誌","イベント","ニコ生"]
+      @genre_filter = []
+      genres.each do |genre|
+        if params[genre] == "on"
+            @genre_filter.push(genre)
+        end
+      end
+
+      performances = ["765","シンデレラ","ミリオン","SideM","シャイニー"]
+      @performance_filter = []
+      performances.each do |performance|
+        if params[performance] == "on"
+            @performance_filter.push(performance)
+        end
+      end
+      
+      if session[:user_id]
+          query = %{
+            SELECT 
+            event.*,
+            time.day,
+            time.special,
+            favorite.user_id AS favorite_user_id,
+            favorite.event_id AS favorite_event_id,
+            bought.event_id AS bought_event_id,
+            bought.user_id AS bought_user_id
+            FROM
+                time 
+            NATURAL JOIN event  
+            LEFT JOIN user_favorite AS favorite
+            ON event.id = favorite.event_id
+            AND favorite.user_id = ? 
+            LEFT JOIN user_bought AS bought
+            ON event.id = bought.event_id
+            AND bought.user_id = ?
+                        WHERE 
+              day >= ? 
+              AND 
+              day < ? 
+          }
+          query = query << "AND genre IN (?) " if @genre_filter.count > 0
+          #query = query << "AND performance IN (?) " if @performance_filter.count > 0
+          query = query << "ORDER BY day;"
+          if @genre_filter.count == 0
+            @events = client.xquery(query,session[:user_id],session[:user_id],rubyDateToSqlDate2(@spanStart),rubyDateToSqlDate2(@spanEnd))
+          else
+            @events = client.xquery(query,session[:user_id],session[:user_id],rubyDateToSqlDate2(@spanStart),rubyDateToSqlDate2(@spanEnd),@genre_filter)
+          end
+      else
+        if @genre_filter.count == 0
+          query = client.prepare("SELECT * FROM event NATURAL JOIN time WHERE day >= ? AND day < ? ORDER BY day;")
+          @events = query.execute(rubyDateToSqlDate2(@spanStart),rubyDateToSqlDate2(@spanEnd))
+        else
+          query = "SELECT * FROM event NATURAL JOIN time WHERE day >= ? AND day < ? AND genre IN (?) ORDER BY day;"
+          @events = client.xquery(query,rubyDateToSqlDate2(@spanStart),rubyDateToSqlDate2(@spanEnd),@genre_filter)
+        end
+      end
+      
+      query = "SELECT *  FROM  performance"
+      @performance = client.xquery(query)
       erb :index
     end
   
@@ -82,10 +145,6 @@ class Rooting < Sinatra::Base
   
     #user登録
     post '/user/new' do
-      #if params[:password] != params[:confirm_password]
-      #  redirect '/p-schedule/sign_up'
-      #end
-  
       begin
         client =  MakeClient()
         query = client.prepare("INSERT INTO user (name, password, password_salt) VALUES(?,?,?)")
@@ -110,7 +169,26 @@ class Rooting < Sinatra::Base
       if(result)
         user = result.first
         @username = user["name"]
-        @user_favorite = client.query("SELECT * FROM event NATURAL JOIN user_favorite WHERE user_id = #{user["id"]}")
+        query_favorite = %{
+          SELECT 
+            * 
+          FROM 
+            event 
+            JOIN user_favorite AS favorite 
+            ON event.id=favorite.event_id 
+            AND favorite.user_id=?
+        }
+        @user_favorite = client.prepare(query_favorite).execute(user["id"])
+        query_bought = %{
+          SELECT 
+            * 
+          FROM 
+            event 
+            JOIN user_bought AS bought 
+            ON event.id=bought.event_id 
+            AND bought.user_id=?
+        }
+        @user_bought = client.prepare(query_bought).execute(user["id"])
         erb :mypage
       else
         redirect '/p-schedule/sign_up'
@@ -122,26 +200,57 @@ class Rooting < Sinatra::Base
       client = MakeClient()
       result = client.prepare("SELECT * FROM event WHERE id = ?").execute(id)
       item = result ? result.first : nil
-      if(item && session[:user_id])
+      favorite_result = client.prepare("SELECT * FROM user_favorite WHERE user_id = ? AND event_id = ?").execute(session[:user_id],id)
+      if(item && session[:user_id]  && favorite_result.count == 0)
         client.prepare("INSERT INTO user_favorite (user_id,event_id) VALUES(?,?)").execute(session[:user_id],id)
         @data = "success"
       else 
-        if request.body.read == "eventid=9"
-          @data = "maji?"
-        else
-          @data = request.body.read
-        end
-        
+        @data = "failed"       
       end
     end
 
     post '/favorite/delete' do
+      id = request.body.read.delete("eventid=")
+      client = MakeClient()
+      if(session[:user_id])
+        result = client.prepare("SELECT * FROM user_favorite WHERE id = ? AND user_id = ?").execute(id,session[id])
+        if(result)
+          client.prepare("DELETE FROM user_favorite WHERE user_id = ? AND event_id = ?").execute(session[:user_id],id)
+          @data = "success"
+        else 
+          @data="failed"
+        end
+      end
     end
 
-  end
-  
- 
+    post '/bought/new' do
+      id = request.body.read.delete("eventid=")
+      client = MakeClient()
+      result = client.prepare("SELECT * FROM event WHERE id = ?").execute(id)
+      item = result ? result.first : nil
+      bought_result = client.prepare("SELECT * FROM user_bought WHERE user_id = ? AND event_id = ?").execute(session[:user_id],id)
+      if(item && session[:user_id]  && bought_result.count == 0)
+        client.prepare("INSERT INTO user_bought (user_id,event_id) VALUES(?,?)").execute(session[:user_id],id)
+        @data = "success"
+      else 
+        @data = "failed"       
+      end
+    end
 
+    post '/bought/delete' do
+      id = request.body.read.delete("eventid=")
+      client = MakeClient()
+      if(session[:user_id])
+        result = client.prepare("SELECT * FROM user_bought WHERE id = ? AND user_id = ?").execute(id,session[id])
+        if(result)
+          client.prepare("DELETE FROM user_bought WHERE user_id = ? AND event_id = ?").execute(session[:user_id],id)
+          @data = "success"
+        else 
+          @data="failed"
+        end
+      end
+    end
+  end
 
 #関数
   

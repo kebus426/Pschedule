@@ -21,7 +21,7 @@ def normalize(text)
 end
 
 url = 'https://idolmaster.jp/schedule/'
-t = Time.new(2016,7,1,0,0,0)#Time.now
+t = Time.now#Time.new(2016,7,1,0,0,0)
 
   
 client = Mysql2::Client.new(host: "localhost",username: "root", password: "",database: "pschedule")
@@ -33,8 +33,10 @@ existData = client.query("SELECT day, name, performance FROM time NATURAL JOIN e
 #end
 
 newData = []
+limitDay = Time.now
+count = (limitDay.year - t.year)*12 + (limitDay.month - t.month + 1)
 
-for num in 0..40 do
+for num in 0..count do
 
   month = if t.month + num > 12 then (t.month + num) % 12 else t.month + num end
   month = 12 if month == 0
