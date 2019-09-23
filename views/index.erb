@@ -2,20 +2,155 @@
   <h1 v-text="message"></h1>
 
 <ul id="year">
-  <% for yr in Range.new(2016,@thisYear) do%>
+  <% thisYear = Time.now.year%>
+  <% for yr in Range.new(2016,thisYear) do%>
   <a href=<%="?ey=#{yr}&em=01"%>><%=yr%></a>
   <% end%>	
 </ul>
-<ul id="month">
-  <% for mth in 1..12 do %>
-  <a href=<%="?ey=#{@year}&em=#{mth}"%>><%=mth%></a>
-  <% end %>
-</ul>
-<h1><%= "#{@year}年#{@month}月"%></h1>
+<% if @spanFlag %>
+  <h1><%= "#{@spanStart.year}年#{@spanStart.month}月～#{@spanEnd.year}年#{@spanEnd.month}月"%></h1>
+<% else %>
+  <ul>
+    <h2><%= @year %></h2>
+  </ul>
+  <ul id="month">
+    <% for mth in 1..12 do %>
+    <a href=<%="?ey=#{@year}&em=#{mth}"%>><%=mth%></a>
+    <% end %>
+  </ul>
+  <h1><%= "#{@year}年#{@month}月"%></h1>
+<% end %>
+
+<div class="card">
+    <div class="card-header">
+      <h4 class="card-body">
+        <a data-toggle="collapse" data-target="#filter">フィルター</a>
+      </h4>
+    </div>
+    <form action="/p-schedule" method="get"  id="filter" class="-collapse collapse">
+      <div class="card-body">
+        <% if @year == 0%>
+          <input type="hidden" name="ey" value="<%= DateTime.now.year%>">
+          <input type="hidden" name="em" value="<%= DateTime.now.month%>">
+        <% else %>
+          <input type="hidden" name="ey" value="<%= @year%>">
+          <input type="hidden" name="em" value="<%= @month%>">
+        <% end %>
+        <fieldset>
+          <legend>ジャンル</legend>
+          <% if @genre_filter.include?("CD")%>
+            <input type="checkbox" name="CD" id="CD" checked>
+          <% else %>
+            <input type="checkbox" name="CD" id="CD">
+          <% end %>    
+          <label for="CD">CD</label>
+
+          <% if @genre_filter.include?("webラジオ")%>
+            <input type="checkbox" name="webラジオ" id="web_radio" checked>
+          <% else %>
+            <input type="checkbox" name="webラジオ" id="web_radio">
+          <% end %>
+          <label for="web_radio">webラジオ</label>
+
+          <% if @genre_filter.include?("web配信")%>
+            <input type="checkbox" name="web配信" id="web_brodcast" checked>
+          <% else %>
+            <input type="checkbox" name="web配信" id="web_brodcast">
+          <% end %>         
+          <label for="web_brodcast">web配信</label>
+
+          <% if @genre_filter.include?("雑誌")%>
+            <input type="checkbox" name="雑誌" id="magazine" checked>
+          <% else %>
+            <input type="checkbox" name="雑誌" id="magazine">
+          <% end %>                
+          <label for="magazine">雑誌</label>
+
+          <% if @genre_filter.include?("イベント")%>
+            <input type="checkbox" name="イベント" id="event" checked> 
+          <% else %>
+            <input type="checkbox" name="イベント" id="event">
+          <% end %>                
+          <label for="event">イベント</label>
+
+          <% if @genre_filter.include?("ニコ生")%>
+            <input type="checkbox" name="ニコ生" id="niconico" checked>
+          <% else %>
+            <input type="checkbox" name="ニコ生" id="niconico">
+          <% end %> 
+          <label for="nico">ニコ生</label>
+        </fieldset>
+        <fieldset>
+          <legend>出演</legend>
+          <% if @performance_filter.include?("765")%>
+            <input type="checkbox" name="765" id="765" checked>
+          <% else %>
+            <input type="checkbox" name="765" id="765">
+          <% end %>    
+          <label for="765">765</label>
+
+          <% if @performance_filter.include?("シンデレラ")%>
+            <input type="checkbox" name="シンデレラ" id="cinderella" checked>
+          <% else %>
+            <input type="checkbox" name="シンデレラ" id="cinderella">
+          <% end %>
+          <label for="cinderella">シンデレラ</label>
+
+          <% if @performance_filter.include?("ミリオン")%>
+            <input type="checkbox" name="ミリオン" id="million" checked>
+          <% else %>
+            <input type="checkbox" name="ミリオン" id="million">
+          <% end %>         
+          <label for="ミリオン">ミリオン</label>
+
+          <% if @performance_filter.include?("SideM")%>
+            <input type="checkbox" name="SideM" id="SideM" checked>
+          <% else %>
+            <input type="checkbox" name="SideM" id="SideM">
+          <% end %>                
+          <label for="SideM">SideM</label>
+
+          <% if @performance_filter.include?("シャイニー")%>
+            <input type="checkbox" name="シャイニー" id="shiny" checked> 
+          <% else %>
+            <input type="checkbox" name="シャイニー" id="shiny">
+          <% end %>                
+          <label for="shiny">シャイニー</label>
+
+        </fieldset>
+        <fieldset>
+          <legend>期間</legend>
+          <% if @spanFlag %>
+            <input type="number" id="start_year" name="start_year" min="2016" step=1 value=<%= @spanStart.year%>> 
+            <label>年</label>
+            <input type="number" id="start_month" name="start_month" min="1" max=12 step=1  value=<%= @spanStart.month%>>
+            <label>月～</label>
+            <input type="number" id="end_year" name="end_year" min="2016" step=1  value=<%= @spanEnd.year%>>
+            <label>年</label>
+            <input type="number" id="end_month" name="end_month" min="1" max=12 step=1  value=<%= @spanEnd.month %>>
+            <label>月</label>
+          <% else %>
+            <input type="number" id="start_year" name="start_year" min="2016" step=1> 
+            <label>年</label>
+            <input type="number" id="start_month" name="start_month" min="1" max=12 step=1>
+            <label>月～</label>
+            <input type="number" id="end_year" name="end_year" min="2016" step=1>
+            <label>年</label>
+            <input type="number" id="end_month" name="end_month" min="1" max=12 step=1>
+            <label>月</label>
+          <% end %>
+        </fieldset>
+      </div>
+      <div class="card-footer">
+        <input class="btn btn-primary" type="submit" value="送信">
+      </div>
+    </form>
+</div>
 <table  border="1" cellspacing="0" cellpadding="5" bordercolor="#333333">
   <tbody>
     <tr id="tableHeader">
-      <td class="time">時間</td>
+      <td class="day">日付</td>
+      <td class="time">時刻</td>
       <td class="special">特殊事項</td>
       <td class="genre">ジャンル</td>
       <td class="name">イベント名</td>
@@ -25,36 +160,59 @@
       <td class="bought">購入済み</td>
       <% end %>
     </tr>
+    <% dayNow = DateTime.new(2015,1,1,0,0,0) #初期化%>
     <% @events.each do |event| %>
-    <tr class="tableRow">
-      <td class="time">
-        <%= event["day"].strftime("%d %H:%M") %>
-      </td>
-      <td class="special">
-	      <%= event["special"]%>
-      </td>
-      <td class="genre">
-        <%= event["genre"] %>
-      </td>
-      <td class="name">
-        <a href=<%= "\"p-schedule/items/#{event["id"]}\"" %> class="text-link" > <%= event["name"] %></a>
-      </td>
-      <td class="performance">
-	      <% text = "" %>
-	      <% @performance.select{|elm| elm["name"] == event["name"]}.each do |perfo|%>
-	        <% text += perfo["performance"] + " " %>
-	      <% end%>
-	      <%= text %>
-      </td>
-      <% if session[:user_id] %>
-      <td class="button">
-          <favorite :eventid=<%= event["id"]%> ></favorite>
-      </td>
-      <td class="button">
-          <button>未購入</button
-      </td>
+      <% performance_text = "" %>
+      <% event_perfo = @performance.select{|elm| elm["name"] == event["name"]}.map{|elm| elm["performance"]}%>
+      <% if @performance_filter.count > 0 && (@performance_filter & event_perfo).count == 0%>
+        <% next%>
       <% end %>
-    </tr>
+	    <% event_perfo.each do |perfo|%>
+	      <% performance_text += perfo + " " %>
+	    <% end%>
+      <tr class="tableRow">
+        <td class="day">
+          <% if dayNow.year != event["day"].year || dayNow.month != event["day"].month || dayNow.day != event["day"].day%>
+           <% if @spanFlag %>
+            <%= event["day"].strftime("%y/%m/%d") %>
+           <% else %>
+            <%= event["day"].strftime("%d") %> 
+           <% end %>
+           <% dayNow = event["day"]%>
+         <% end %>
+        </td>
+       <td class="time">
+          <%= event["day"].strftime("%H:%M") %>
+       </td>
+        <td class="special">
+          <%= event["special"]%>
+        </td>
+        <td class="genre">
+          <%= event["genre"] %>
+        </td>
+        <td class="name">
+          <a href=<%= "\"p-schedule/items/#{event["id"]}\"" %> class="text-link" > <%= event["name"] %></a>
+        </td>
+        <td class="performance">   
+          <%= performance_text %>
+        </td>
+        <% if session[:user_id] %>
+        <td class="favorite">
+            <%if event["favorite_user_id"]%>
+              <favorite :eventid=<%= event["id"]%>  :isactive="false" :isfavorite="true" :msg="'解除'"></favorite>
+            <%else%>
+              <favorite :eventid=<%= event["id"]%>  :isactive="true" :isfavorite="false" :msg="'ファボる'"></favorite>
+            <%end%>
+        </td>
+        <td class="bought">
+            <%if event["bought_user_id"]%>
+              <bought :eventid=<%= event["id"]%>  :isactive="false" :isbought="true" :msg="'購入済み'"></bought>
+            <%else%>
+              <bought :eventid=<%= event["id"]%>  :isactive="true" :isbought="false" :msg="'未購入'"></bought>
+            <%end%>
+        </td>
+        <% end %>
+      </tr>
     <% end %>
   </tbody>
 </table>

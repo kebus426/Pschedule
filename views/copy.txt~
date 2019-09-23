@@ -1,0 +1,3 @@
+<% #@performance.select{|elm| elm["name"] == datum["name"]}.each do |perfo|%>
+	  <%= #perfo["performance"] + " " %>
+	<% #end%>

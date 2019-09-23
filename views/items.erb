@@ -24,7 +24,7 @@
   </h2>
 
   <h2>
-    リンク:<a href=<%= "\"#{dataFirst["url"]}\"" %> class="text-link" > <%= dataFirst["url"] %></a><
+    リンク:<a href=<%= "\"#{dataFirst["url"]}\"" %> class="text-link" > <%= dataFirst["url"] %></a>
   </h2>
   
   <table border="1" width="500" cellspacing="0" cellpadding="5" bordercolor="#333333">
@@ -32,7 +32,7 @@
     <% @data.each do |datum| %>
     <tr>
       <td id="time">
-        <%= datum["day"].strftime("%d %H:%M") %>
+        <%= datum["day"].strftime("%y/%m/%d %H:%M") %>
       </td>
       <td id="special">
 	<%= datum["special"]%>

@@ -7,7 +7,7 @@
     <a href="#home" id="home-tab" class="nav-link active" role="tab" data-toggle="tab" aria-controls="home" aria-selected="true">お気に入り</a>
   </li>
   <li class="nav-item">
-    <a href="#profile" id="profile-tab" class="nav-link" role="tab" data-toggle="tab" aria-controls="profile" aria-selected="false">プロフィール</a>
+    <a href="#profile" id="profile-tab" class="nav-link" role="tab" data-toggle="tab" aria-controls="profile" aria-selected="false">購入済み</a>
   </li>
   <li class="nav-item">
     <a href="#contact" id="contact-tab" class="nav-link" role="tab" data-toggle="tab" aria-controls="contact" aria-selected="false">コンタクト</a>
@@ -29,7 +29,7 @@
                 <%= event["genre"] %>
               </td>
               <td id="name">
-                <a href=<%= "\"p-schedule/items/#{event["id"]}\"" %> class="text-link" > <%= event["name"] %></a>
+                <a href=<%= "\"items/#{event["id"]}\"" %> class="text-link" > <%= event["name"] %></a>
               </td>
               <td class="buttonB" id="bought">
                 <button>未購入</button>
@@ -42,7 +42,32 @@
       <p>お気に入りはありません</p>
     <% end %>
   </div>
-  <div id="profile" class="tab-pane" role="tabpanel" aria-labelledby="profile-tab">プロフィールの文章です。...</div>
+  <div id="profile" class="tab-pane" role="tabpanel" aria-labelledby="profile-tab">
+    <% if @user_bought.count > 0%>
+      <table>
+        <tbody>
+          <% @user_bought.each do |event| %>
+            <tr class="tableBody" id=<%= event["id"]%>>
+              <td id="special">
+	              <%= event["special"]%>
+              </td>
+              <td id="genre">
+                <%= event["genre"] %>
+              </td>
+              <td id="name">
+                <a href=<%= "\"items/#{event["id"]}\"" %> class="text-link" > <%= event["name"] %></a>
+              </td>
+              <td class="bought" >
+                <button class="btn btn-success">取り消し</button>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <p>購入したものはありません</p>
+    <% end %>
+  </div>
   <div id="contact" class="tab-pane" role="tabpanel" aria-labelledby="contact-tab">コンタクトの文章です。...</div>
 </div>
 </html>
