@@ -1,0 +1,43 @@
+<html>
+  <% if @data.first != nil%>
+  <% dataFirst = @data.first%>
+  <% end%>
+
+  <h1><%= dataFirst["name"]%></h1>
+  
+
+  <h2 id="performance">
+    <% text = "" %>
+    <% @performance.select{|elm| dataFirst != nil and elm["name"] == dataFirst["name"]}.each do |perfo|%>
+    <% text += perfo["performance"] + " " %>
+    <% end%>
+    出演:<%= text %>
+  </h2>
+
+  <h2>
+    <input type="checkbox" id="scales" name="scales" checked>
+    <label for="scales">購入済み</label>
+  </h2>
+
+  <h2>
+    ジャンル: <% if dataFirst != nil%><%= dataFirst["genre"] %><% end%>
+  </h2>
+
+  <h2>
+    リンク:<a href=<%= "\"#{dataFirst["url"]}\"" %> class="text-link" > <%= dataFirst["url"] %></a>
+  </h2>
+  
+  <table border="1" width="500" cellspacing="0" cellpadding="5" bordercolor="#333333">
+  <tbody>
+    <% @data.each do |datum| %>
+    <tr>
+      <td id="time">
+        <%= datum["day"].strftime("%y/%m/%d %H:%M") %>
+      </td>
+      <td id="special">
+	<%= datum["special"]%>
+      </td>
+    </tr>
+    <% end %>
+  </tbody>
+</html>

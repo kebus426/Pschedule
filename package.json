@@ -1,0 +1,30 @@
+{
+  "name": "Pschedule",
+  "version": "1.0.0",
+  "description": "プロデューサースケジュール管理",
+  "main": "index.js",
+  "watch": true,
+  "scripts": {
+    "build": "webpack --mode development",
+    "watch": "webpack -watch --mode development"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kebus426/Pschedule.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kebus426/Pschedule/issues"
+  },
+  "homepage": "https://github.com/kebus426/Pschedule#readme",
+  "devDependencies": {
+    "webpack": "^4.39.1",
+    "webpack-cli": "^3.3.6"
+  },
+  "dependencies": {
+    "axios": "^0.19.0",
+    "vue": "^2.6.10"
+  }
+}
