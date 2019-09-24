@@ -20,14 +20,14 @@ class Rooting < Sinatra::Base
       @spanFlag = (params.has_key?('start_year') && params['start_year'] != '') || (params.has_key?('end_year') && params['end_year'] != '')
       if @spanFlag
         if params.has_key?('start_year') && params['start_year'] != ''
-          monthS = params.has_key?('start_month') ? params['start_month'].to_i : 1
+          monthS = params.has_key?('start_month') && params['start_month'] != '' ? params['start_month'].to_i : 1
           @spanStart = DateTime.new(params['start_year'].to_i,monthS,1,0,0,0)
         else 
-          @spanStart = DateTime.new(2015,1,1,0,0,0,0)
+          @spanStart = DateTime.new(2016,1,1,0,0,0,0)
         end
 
         if params.has_key?('end_year') && params['end_year'] != ''
-          monthE = params.has_key?('end_month') ? params['end_month'].to_i : 1
+          monthE = params.has_key?('end_month') && params['end_month'] != '' ? params['end_month'].to_i : 1
           @spanEnd = DateTime.new(params['end_year'].to_i,monthE,1,0,0,0)
         else 
           @spanEnd = (DateTime.now >> 1)
@@ -46,6 +46,8 @@ class Rooting < Sinatra::Base
             @genre_filter.push(genre)
         end
       end
+
+      @search_event_name = params.has_key?('search_event_name') && params['search_event_name'] != '' ? params['search_event_name'] : ''
 
       performances = ["765","シンデレラ","ミリオン","SideM","シャイニー"]
       @performance_filter = []
@@ -80,12 +82,16 @@ class Rooting < Sinatra::Base
               day < ? 
           }
           query = query << "AND genre IN (?) " if @genre_filter.count > 0
-          #query = query << "AND performance IN (?) " if @performance_filter.count > 0
+          query = query << "AND name like ?" if @search_event_name != ''
           query = query << "ORDER BY day;"
-          if @genre_filter.count == 0
+          if @genre_filter.count == 0 && @search_event_name == ''
             @events = client.xquery(query,session[:user_id],session[:user_id],rubyDateToSqlDate2(@spanStart),rubyDateToSqlDate2(@spanEnd))
-          else
+          elsif @search_event_name == ''
             @events = client.xquery(query,session[:user_id],session[:user_id],rubyDateToSqlDate2(@spanStart),rubyDateToSqlDate2(@spanEnd),@genre_filter)
+          elsif @genre_filter.count == 0
+            @events = client.xquery(query,session[:user_id],session[:user_id],rubyDateToSqlDate2(@spanStart),rubyDateToSqlDate2(@spanEnd), '%' << @search_event_name << '%')
+          else
+            @events = client.xquery(query,session[:user_id],session[:user_id],rubyDateToSqlDate2(@spanStart),rubyDateToSqlDate2(@spanEnd),@genre_filter, '%' << @search_event_name << '%')
           end
       else
         if @genre_filter.count == 0
