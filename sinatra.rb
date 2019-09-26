@@ -20,15 +20,15 @@ class Rooting < Sinatra::Base
       @spanFlag = (params.has_key?('start_year') && params['start_year'] != '') || (params.has_key?('end_year') && params['end_year'] != '')
       if @spanFlag
         if params.has_key?('start_year') && params['start_year'] != ''
-          monthS = params.has_key?('start_month') ? params['start_month'].to_i : 1
+          monthS = params.has_key?('start_month') && params['start_month'] != '' ? params['start_month'].to_i : 1
           @spanStart = DateTime.new(params['start_year'].to_i,monthS,1,0,0,0)
         else 
-          @spanStart = DateTime.new(2015,1,1,0,0,0,0)
+          @spanStart = DateTime.new(2016,1,1,0,0,0,0)
         end
 
         if params.has_key?('end_year') && params['end_year'] != ''
-          monthE = params.has_key?('end_month') ? params['end_month'].to_i : 1
-          @spanEnd = DateTime.new(params['end_year'].to_i,monthE,1,0,0,0)
+          monthE = params.has_key?('end_month') && params['end_month'] != '' ? params['end_month'].to_i : 1
+          @spanEnd = (DateTime.new(params['end_year'].to_i,monthE,1,0,0,0) >> 1)
         else 
           @spanEnd = (DateTime.now >> 1)
         end
@@ -39,13 +39,15 @@ class Rooting < Sinatra::Base
         @spanEnd = (@spanStart >> 1)
       end
       
-      genres = ["CD","webラジオ","web配信","雑誌","イベント","ニコ生"]
+      genres = ["CD","webラジオ","web配信","雑誌","単行本","イベント","ニコ生"]
       @genre_filter = []
       genres.each do |genre|
         if params[genre] == "on"
             @genre_filter.push(genre)
         end
       end
+
+      @search_event_name = params.has_key?('search_event_name') && params['search_event_name'] != '' ? params['search_event_name'] : ''
 
       performances = ["765","シンデレラ","ミリオン","SideM","シャイニー"]
       @performance_filter = []
@@ -69,23 +71,31 @@ class Rooting < Sinatra::Base
                 time 
             NATURAL JOIN event  
             LEFT JOIN user_favorite AS favorite
-            ON event.id = favorite.event_id
-            AND favorite.user_id = ? 
+            ON 
+              event.id = favorite.event_id
+              AND 
+              favorite.user_id = ? 
             LEFT JOIN user_bought AS bought
-            ON event.id = bought.event_id
-            AND bought.user_id = ?
-                        WHERE 
+            ON 
+              event.id = bought.event_id
+              AND 
+              bought.user_id = ?
+            WHERE 
               day >= ? 
               AND 
               day < ? 
           }
           query = query << "AND genre IN (?) " if @genre_filter.count > 0
-          #query = query << "AND performance IN (?) " if @performance_filter.count > 0
+          query = query << "AND name like ?" if @search_event_name != ''
           query = query << "ORDER BY day;"
-          if @genre_filter.count == 0
+          if @genre_filter.count == 0 && @search_event_name == ''
             @events = client.xquery(query,session[:user_id],session[:user_id],rubyDateToSqlDate2(@spanStart),rubyDateToSqlDate2(@spanEnd))
-          else
+          elsif @search_event_name == ''
             @events = client.xquery(query,session[:user_id],session[:user_id],rubyDateToSqlDate2(@spanStart),rubyDateToSqlDate2(@spanEnd),@genre_filter)
+          elsif @genre_filter.count == 0
+            @events = client.xquery(query,session[:user_id],session[:user_id],rubyDateToSqlDate2(@spanStart),rubyDateToSqlDate2(@spanEnd), '%' << @search_event_name << '%')
+          else
+            @events = client.xquery(query,session[:user_id],session[:user_id],rubyDateToSqlDate2(@spanStart),rubyDateToSqlDate2(@spanEnd),@genre_filter, '%' << @search_event_name << '%')
           end
       else
         if @genre_filter.count == 0
@@ -104,8 +114,38 @@ class Rooting < Sinatra::Base
   
     get '/items/:id' do
       client =  MakeClient()
-      query = client.prepare("SELECT * FROM event NATURAL JOIN performance NATURAL JOIN time WHERE id = ?")
-      @data = query.execute(params[:id])
+      query = %{
+        SELECT 
+          event.*,
+          performance.*,
+          time.*, 
+          favorite.user_id AS favorite_user_id,
+          favorite.event_id AS favorite_event_id,
+          bought.event_id AS bought_event_id,
+          bought.user_id AS bought_user_id
+        FROM 
+          event
+          NATURAL JOIN 
+          performance
+          NATURAL JOIN 
+          time 
+          LEFT JOIN user_favorite AS favorite
+          ON 
+            event.id = favorite.event_id
+            AND 
+            favorite.user_id = ? 
+          LEFT JOIN user_bought AS bought
+          ON 
+            event.id = bought.event_id
+            AND 
+            bought.user_id = ?
+        WHERE 
+          event.id = ?
+        ORDER BY day DESC
+        LIMIT 10
+      }
+      @user_id = session[:user_id] ? session[:user_id] : -1
+      @data = client.xquery(query,@user_id,@user_id,params[:id])
       @performance = client.query("SELECT *  FROM  performance")
       erb :items
   
@@ -169,27 +209,29 @@ class Rooting < Sinatra::Base
       if(result)
         user = result.first
         @username = user["name"]
-        query_favorite = %{
+        query = %{
           SELECT 
-            * 
+            event.*,
+            favorite.user_id AS favorite_user_id, 
+            bought.user_id AS bought_user_id
           FROM 
             event 
-            JOIN user_favorite AS favorite 
-            ON event.id=favorite.event_id 
-            AND favorite.user_id=?
+            LEFT JOIN user_favorite AS favorite 
+              ON event.id=favorite.event_id 
+              AND favorite.user_id=?
+            LEFT JOIN user_bought AS bought 
+              ON event.id=bought.event_id 
+              AND bought.user_id=?
         }
-        @user_favorite = client.prepare(query_favorite).execute(user["id"])
-        query_bought = %{
-          SELECT 
-            * 
-          FROM 
-            event 
-            JOIN user_bought AS bought 
-            ON event.id=bought.event_id 
-            AND bought.user_id=?
-        }
-        @user_bought = client.prepare(query_bought).execute(user["id"])
+        user_data = client.xquery(query,user["id"],user["id"])
+        @user_favorite = user_data.select{|elm| elm['favorite_user_id'] != nil}
+        @user_bought = user_data.select{|elm| elm['bought_user_id'] != nil}
+  
+        query = "SELECT *  FROM  performance"
+        @performance = client.xquery(query)
+        
         erb :mypage
+        
       else
         redirect '/p-schedule/sign_up'
       end

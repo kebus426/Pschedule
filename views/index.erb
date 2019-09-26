@@ -66,6 +66,13 @@
           <% end %>                
           <label for="magazine">雑誌</label>
 
+          <% if @genre_filter.include?("単行本")%>
+            <input type="checkbox" name="単行本" id="book" checked>
+          <% else %>
+            <input type="checkbox" name="単行本" id="book">
+          <% end %>                
+          <label for="book">単行本</label>
+
           <% if @genre_filter.include?("イベント")%>
             <input type="checkbox" name="イベント" id="event" checked> 
           <% else %>
@@ -140,6 +147,10 @@
             <label>月</label>
           <% end %>
         </fieldset>
+        <fieldset>
+          <legend>イベント名</legend>
+          <input type="text" id="search_event_name" name="search_event_name" value=<%= @search_event_name %>>
+        </fieldset>
       </div>
       <div class="card-footer">
         <input class="btn btn-primary" type="submit" value="送信">
@@ -156,8 +167,8 @@
       <td class="name">イベント名</td>
       <td class="performance">出演</td>
       <% if session[:user_id] %>
-      <td class="favorite">お気に入り</td>
-      <td class="bought">購入済み</td>
+        <td class="favorite">お気に入り</td>
+        <td class="bought">購入済み</td>
       <% end %>
     </tr>
     <% dayNow = DateTime.new(2015,1,1,0,0,0) #初期化%>

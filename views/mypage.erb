@@ -4,35 +4,51 @@
 <!-- タブ部分 -->
 <ul id="myTab" class="nav nav-tabs" role="tablist">
   <li class="nav-item">
-    <a href="#home" id="home-tab" class="nav-link active" role="tab" data-toggle="tab" aria-controls="home" aria-selected="true">お気に入り</a>
+    <a href="#favorite" id="favorite-tab" class="nav-link active" role="tab" data-toggle="tab" aria-controls="favorite" aria-selected="true">お気に入り</a>
   </li>
   <li class="nav-item">
-    <a href="#profile" id="profile-tab" class="nav-link" role="tab" data-toggle="tab" aria-controls="profile" aria-selected="false">購入済み</a>
-  </li>
-  <li class="nav-item">
-    <a href="#contact" id="contact-tab" class="nav-link" role="tab" data-toggle="tab" aria-controls="contact" aria-selected="false">コンタクト</a>
+    <a href="#bought" id="bought-tab" class="nav-link" role="tab" data-toggle="tab" aria-controls="bought" aria-selected="false">購入済み</a>
   </li>
 </ul>
 
 <!-- パネル部分 -->
 <div id="myTabContent" class="tab-content mt-3">
-  <div id="home" class="tab-pane active" role="tabpanel" aria-labelledby="home-tab">
+  <div id="favorite" class="tab-pane active" role="tabpanel" aria-labelledby="favorite-tab">
     <% if @user_favorite.count > 0%>
-      <table>
+      <table border="1" cellspacing="0" cellpadding="5" bordercolor="#333333">
         <tbody>
+          <tr id="tableHeader">
+            <td class="name">イベント名</td>
+            <td class="genre">ジャンル</td>
+            <td class="performance">出演</td>
+            <td class="favorite">お気に入り</td>
+            <td class="bought">購入済み</td> 
+          </tr>
           <% @user_favorite.each do |event| %>
-            <tr class="tableBody" id=<%= event["id"]%>>
-              <td id="special">
-	              <%= event["special"]%>
-              </td>
-              <td id="genre">
-                <%= event["genre"] %>
-              </td>
-              <td id="name">
+            <% performance_text = "" %>
+            <% event_perfo = @performance.select{|elm| elm["name"] == event["name"]}.map{|elm| elm["performance"]}%>
+            <% event_perfo.each do |perfo|%>
+              <% performance_text += perfo + " " %>
+            <% end%>
+            <tr class="tableBody">
+              <td class="name">
                 <a href=<%= "\"items/#{event["id"]}\"" %> class="text-link" > <%= event["name"] %></a>
               </td>
-              <td class="buttonB" id="bought">
-                <button>未購入</button>
+              <td class="genre">
+                <%= event["genre"] %>
+              </td>
+              <td class="performance">
+                <%= performance_text %>
+              </td>
+              <td class="favorite">
+                <favorite :eventid=<%= event["id"]%>  :isactive="false" :isfavorite="true" :msg="'解除'"></favorite>
+              </td>
+              <td class="bought">
+                <%if event["bought_user_id"]%>
+                  <bought :eventid=<%= event["id"]%>  :isactive="false" :isbought="true" :msg="'購入済み'"></bought>
+                <%else%>
+                  <bought :eventid=<%= event["id"]%>  :isactive="true" :isbought="false" :msg="'未購入'"></bought>
+                <%end%>
               </td>
             </tr>
           <% end %>
@@ -42,23 +58,40 @@
       <p>お気に入りはありません</p>
     <% end %>
   </div>
-  <div id="profile" class="tab-pane" role="tabpanel" aria-labelledby="profile-tab">
+  <div id="bought" class="tab-pane" role="tabpanel" aria-labelledby="bought-tab">
     <% if @user_bought.count > 0%>
-      <table>
+      <table border="1" cellspacing="0" cellpadding="5" bordercolor="#333333">
         <tbody>
+          <td class="name">イベント名</td>
+          <td class="genre">ジャンル</td>
+          <td class="performance">出演</td>
+          <td class="favorite">お気に入り</td>
+          <td class="bought">購入済み</td>
           <% @user_bought.each do |event| %>
+            <% performance_text = "" %>
+            <% event_perfo = @performance.select{|elm| elm["name"] == event["name"]}.map{|elm| elm["performance"]}%>
+            <% event_perfo.each do |perfo|%>
+              <% performance_text += perfo + " " %>
+            <% end%>
             <tr class="tableBody" id=<%= event["id"]%>>
-              <td id="special">
-	              <%= event["special"]%>
-              </td>
-              <td id="genre">
-                <%= event["genre"] %>
-              </td>
-              <td id="name">
+              <td class="name">
                 <a href=<%= "\"items/#{event["id"]}\"" %> class="text-link" > <%= event["name"] %></a>
               </td>
-              <td class="bought" >
-                <button class="btn btn-success">取り消し</button>
+              <td class="genre">
+                <%= event["genre"] %>
+              </td>
+              <td class="performance">
+                <%= performance_text %>
+              </td>
+              <td class="favorite">
+                <% if event["bought_user_id"]%>
+                  <favorite :eventid=<%= event["id"]%>  :isactive="false" :isfavorite="true" :msg="'解除'"></favorite>
+                <% else %>
+                  <favorite :eventid=<%= event["id"]%>  :isactive="true" :isfavorite="false" :msg="'ファボる'"></favorite>
+                <% end %>
+              </td>
+              <td class="bought">
+                <bought :eventid=<%= event["id"]%>  :isactive="false" :isbought="true" :msg="'購入済み'"></bought>
               </td>
             </tr>
           <% end %>
@@ -68,6 +101,5 @@
       <p>購入したものはありません</p>
     <% end %>
   </div>
-  <div id="contact" class="tab-pane" role="tabpanel" aria-labelledby="contact-tab">コンタクトの文章です。...</div>
 </div>
 </html>
