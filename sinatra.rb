@@ -209,27 +209,29 @@ class Rooting < Sinatra::Base
       if(result)
         user = result.first
         @username = user["name"]
-        query_favorite = %{
+        query = %{
           SELECT 
-            * 
+            event.*,
+            favorite.user_id AS favorite_user_id, 
+            bought.user_id AS bought_user_id
           FROM 
             event 
-            JOIN user_favorite AS favorite 
-            ON event.id=favorite.event_id 
-            AND favorite.user_id=?
+            LEFT JOIN user_favorite AS favorite 
+              ON event.id=favorite.event_id 
+              AND favorite.user_id=?
+            LEFT JOIN user_bought AS bought 
+              ON event.id=bought.event_id 
+              AND bought.user_id=?
         }
-        @user_favorite = client.prepare(query_favorite).execute(user["id"])
-        query_bought = %{
-          SELECT 
-            * 
-          FROM 
-            event 
-            JOIN user_bought AS bought 
-            ON event.id=bought.event_id 
-            AND bought.user_id=?
-        }
-        @user_bought = client.prepare(query_bought).execute(user["id"])
+        user_data = client.xquery(query,user["id"],user["id"])
+        @user_favorite = user_data.select{|elm| elm['favorite_user_id'] != nil}
+        @user_bought = user_data.select{|elm| elm['bought_user_id'] != nil}
+  
+        query = "SELECT *  FROM  performance"
+        @performance = client.xquery(query)
+        
         erb :mypage
+        
       else
         redirect '/p-schedule/sign_up'
       end
