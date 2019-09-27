@@ -1,7 +1,6 @@
--- CREATE DATABASE pschedule
+CREATE DATABASE IF NOT EXISTS pschedule
 USE pschedule;
 
--- パフォーマンスはわける
 DROP TABLE IF EXISTS performance;
 DROP TABLE IF EXISTS time;
 DROP TABLE IF EXISTS user;
