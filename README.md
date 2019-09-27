@@ -19,7 +19,8 @@ mysql -u root -p < initDB.sql
 #pschedule.conf
 # use the socket we configured in our unicorn.rb
 	upstream unicorn_server {
-	  server unix:/home/kebus/Pschedule/tmp/sockets/unicorn.sock;
+      #ここのパスは書き換える
+	  server unix:/your/pass/Pschedule/tmp/sockets/unicorn.sock;
  	}
 
 server{
