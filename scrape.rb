@@ -21,21 +21,18 @@ def normalize(text)
 end
 
 url = 'https://idolmaster.jp/schedule/'
-t = Time.now#Time.new(2016,7,1,0,0,0)
-
+#初期化しないときは現在の月を起点にする
+t = ARGV.count > 0 && ARGV[0] == 'init' ? Time.new(2016,7,1,0,0,0) : Time.now
   
 client = Mysql2::Client.new(host: "localhost",username: "root", password: "",database: "pschedule")
   
 existData = client.query("SELECT day, name, performance FROM time NATURAL JOIN event NATURAL JOIN performance ORDER BY day")
 
-#existData.each do |elm|
-#  puts elm["name"]
-#end
-
 newData = []
 limitDay = Time.now
 count = (limitDay.year - t.year)*12 + (limitDay.month - t.month + 1)
 
+#起点～現在の日にち+1月
 for num in 0..count do
 
   month = if t.month + num > 12 then (t.month + num) % 12 else t.month + num end
@@ -54,6 +51,7 @@ for num in 0..count do
   day = 0
   doc = Nokogiri::HTML.parse(html, nil, charset)
 
+  #パース
   doc.xpath('//tr').each do |trNode|
     eventData = {}
     eventTime = []
