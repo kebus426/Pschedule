@@ -1,7 +1,7 @@
 # Pschedule
 プロデューサースケジュール管理
 
-##初期設定
+## 初期設定
 ```
 #bash
 bundle install --path vendor/bundle 
@@ -52,6 +52,6 @@ bundle exec unicorn -c unicorn.rb -E production -D
 再起動には`./restart.sh`。
 `bundle exec ruby scrape.rb`をすると今月と来月の情報を更新する。
 
-##何ができるの
+## 何ができるの
 https://idolmaster.jp/schedule/ の情報を検索したりお気に入りをつけたりできる。
 お気に入りをする際はユーザー登録してください。
