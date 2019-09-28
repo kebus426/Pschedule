@@ -14,6 +14,7 @@ sudo apt-get install build-essential
 npm install
 npm run build
 mysql -u root -p < initDB.sql
+bundle exec ruby scrape.rb init
 ```
 ```
 #pschedule.conf
