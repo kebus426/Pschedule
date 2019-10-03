@@ -156,7 +156,7 @@ class Rooting < Sinatra::Base
       if session[:user_id]
         redirect '/p-schedule/log_out' #logout form
       end 
-      
+      @header = session[:header]
       erb :sign_up
     end
   
@@ -165,6 +165,7 @@ class Rooting < Sinatra::Base
       if session[:user_id]
         redirect '/p-schedule' #logout form
       end 
+      @header = session[:header]
       erb :sign_in
     end
   
@@ -172,8 +173,10 @@ class Rooting < Sinatra::Base
       user = authenticate(params[:name],params[:password])
       if(user != nil)      
         session[:user_id] = user["id"]
+        session[:header] = nil
         redirect 'p-schedule'
       else
+        session[:header]="ログインに失敗しました"
         redirect 'p-schedule/sign_in'
       end
     end
@@ -191,12 +194,14 @@ class Rooting < Sinatra::Base
         password_info = encrypt_password(params[:password])
         query.execute(params[:name], password_info["password"],password_info["password_salt"])
         
-        client.prepare("SELECT id FROM user WHERE name = ?").execute(params[:name]).each do |id|
-          session[:user_id] = id
+        user = authenticate(params[:name],params[:password])
+        if user
+          session[:user_id] = user["id"]
         end
+        session[:header] = nil
         redirect '/p-schedule'
       rescue => ex 
-        puts ex
+        session[:header] = ex.message
         redirect '/p-schedule/sign_up'
       end
     
@@ -206,7 +211,7 @@ class Rooting < Sinatra::Base
     get '/mypage' do
       client = MakeClient()
       result = client.prepare("SELECT name, id FROM user WHERE id = ?").execute(session[:user_id])
-      if(result)
+      if(result.count > 0)
         user = result.first
         @username = user["name"]
         query = %{

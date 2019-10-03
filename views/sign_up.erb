@@ -7,10 +7,10 @@
       パスワード:<input type="password" name="password" value="">
     </div>
     <div>
-      確認:<input type="password" name="confirm_password" value="">
-    </div>
-    <div>
       <input type="submit" value="送信する">
+      <% if @header != nil %>
+        <%= @header %>
+      <% end %> 
     </div>
   </form>
 </html>

@@ -15,7 +15,7 @@
 <div id="myTabContent" class="tab-content mt-3">
   <div id="favorite" class="tab-pane active" role="tabpanel" aria-labelledby="favorite-tab">
     <% if @user_favorite.count > 0%>
-      <table border="1" cellspacing="0" cellpadding="5" bordercolor="#333333">
+      <table>
         <tbody>
           <tr id="tableHeader">
             <td class="name">イベント名</td>
@@ -60,7 +60,7 @@
   </div>
   <div id="bought" class="tab-pane" role="tabpanel" aria-labelledby="bought-tab">
     <% if @user_bought.count > 0%>
-      <table border="1" cellspacing="0" cellpadding="5" bordercolor="#333333">
+      <table>
         <tbody>
           <td class="name">イベント名</td>
           <td class="genre">ジャンル</td>

@@ -1,4 +1,13 @@
 table {
   table-layout: auto;
   width: 1000;
+  border: 1px solid;
+  border-collapse: collapse;
+  border-spacing: 0;
+  border-color:#333333;
+  padding: 5em 5em 5em 5em;
+}
+td{
+  padding: 10;
+  border: 1px solid;
 }
