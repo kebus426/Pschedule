@@ -10,13 +10,13 @@
         <% if dataFirst["favorite_user_id"]%>
           <favorite :eventid=<%= dataFirst["id"]%>  :isactive="false" :isfavorite="true" :msg="'解除'"></favorite>
         <% else %>
-          <favorite :eventid=<%= dataFirst["id"]%>  :isactive="true" :isfavorite="false" :msg="'ファボる'"></favorite>          <%end%>
+          <favorite :eventid=<%= dataFirst["id"]%>  :isactive="true" :isfavorite="false" :msg="'登録'"></favorite>          <%end%>
       </td>
       <td class="bought">
         <% if dataFirst["bought_user_id"]%>
-          <bought :eventid=<%= dataFirst["id"]%>  :isactive="false" :isbought="true" :msg="'購入済み'"></bought>
+          <bought :eventid=<%= dataFirst["id"]%>  :isactive="false" :isbought="true" :msg="'解除'"></bought>
         <% else %>
-          <bought :eventid=<%= dataFirst["id"]%>  :isactive="true" :isbought="false" :msg="'未購入'"></bought>
+          <bought :eventid=<%= dataFirst["id"]%>  :isactive="true" :isbought="false" :msg="'登録'"></bought>
         <% end %>
       </td>
     <% end %>

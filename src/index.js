@@ -13,7 +13,7 @@ Vue.component('favorite',{
     },
     msg: {
       type: String,
-      default: "ふぁぼる"
+      default: "登録"
     },
     isactive: {
       type: Boolean,
@@ -53,7 +53,7 @@ Vue.component('favorite',{
         .then( res =>  {
           this.isactive = true
           this.isfavorite = false
-          this.msg = "ファボる"
+          this.msg = "登録"
         })
         .catch( res =>  {
           //vueにバインドされている値を書き換えると表示に反映される
@@ -90,7 +90,7 @@ Vue.component('bought',{
     },
     msg: {
       type: String,
-      default: "未購入"
+      default: "登録"
     },
     isactive: {
       type: Boolean,
@@ -116,7 +116,7 @@ Vue.component('bought',{
         .then(res => {
           this.isactive = false
           this.isbought = true
-          this.msg = "購入済み"
+          this.msg = "解除"
           console.log(res)
         })
         .catch(res => {
@@ -130,7 +130,7 @@ Vue.component('bought',{
         .then( res =>  {
           this.isactive = true
           this.isbought = false
-          this.msg = "未購入"
+          this.msg = "登録"
         })
         .catch( res =>  {
           //vueにバインドされている値を書き換えると表示に反映される
