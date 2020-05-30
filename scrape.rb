@@ -53,88 +53,92 @@ for num in 0..count do
 
   #パース
   doc.xpath('//tr').each do |trNode|
-    eventData = {}
-    eventTime = []
-    eventSpecial = []
-    trNode.css('td').each do |tdNode|
-      next if tdNode['class'] == nil
-      case tdNode['class']
-      when 'week2'
-        eventData["week"] = tdNode.text.encode('UTF-8') if tdNode.text != ''
-      when 'genre2'
-        eventData["genre"] = tdNode.text.encode('UTF-8') if tdNode.text != '' 
-      when 'day2';
-        day += 1
-      when 'performance2';
-        tdNode.css('img').each do |nd|
-          eventData["performance"] = nd['alt'].split('、') if nd['alt'] != nil
-        end
-      when 'article2';
-        tdNode.css('a').each do |nd|
-          eventData["url"] =  nd['href'] if nd['href'] != nil
-        end
-        eventData["name"] = UNF::Normalizer.normalize(tdNode.text.encode('UTF-8'), :nfkc) if tdNode.text != '' 
-      when 'time2'
-        text = tdNode.text.encode('UTF-8')
-        text = normalize(text)
-        if not text.include?('～') and not text.include?(':') and text != ''
-          eventTime.push(DateTime.new(year,month,day))
-          eventData["special"] = text
-        elsif text != ''
-          time = text.split('～')
-          if(time[0].include?(':'))
-            date = time[0].split(':')
-            eventTime.push(DateTime.new(year.to_i,month.to_i,day.to_i,date[0].to_i % 24,date[1].to_i,0) + date[0].to_i / 24)
-          else
-            index = 0
-            time.each do |date|
-              d = date.split('/')
-              if index == 0
-                eventData["special"] = '開始日'
-                index += 1
-              else
-                eventData["special"] = '終了日'
-              end
-              if month > d[0].to_i
-                eventTime.push(DateTime.new(year.to_i+1,d[0].to_i,d[1].to_i,0,0,0))
-              else
-                eventTime.push(DateTime.new(year.to_i,d[0].to_i,d[1].to_i,0,0,0))
+    begin
+      eventData = {}
+      eventTime = []
+      eventSpecial = []
+      trNode.css('td').each do |tdNode|
+        next if tdNode['class'] == nil
+        case tdNode['class']
+        when 'week2'
+          eventData["week"] = tdNode.text.encode('UTF-8') if tdNode.text != ''
+        when 'genre2'
+          eventData["genre"] = tdNode.text.encode('UTF-8') if tdNode.text != '' 
+        when 'day2';
+          day += 1
+        when 'performance2';
+          tdNode.css('img').each do |nd|
+            eventData["performance"] = nd['alt'].split('、') if nd['alt'] != nil
+          end
+        when 'article2';
+          tdNode.css('a').each do |nd|
+            eventData["url"] =  nd['href'] if nd['href'] != nil
+          end
+          eventData["name"] = UNF::Normalizer.normalize(tdNode.text.encode('UTF-8'), :nfkc) if tdNode.text != '' 
+        when 'time2'
+          text = tdNode.text.encode('UTF-8')
+          text = normalize(text)
+          if not text.include?('～') and not text.include?(':') and text != ''
+            eventTime.push(DateTime.new(year,month,day))
+            eventData["special"] = text
+          elsif text != ''
+            time = text.split('～')
+            if(time[0].include?(':'))
+              date = time[0].split(':')
+              eventTime.push(DateTime.new(year.to_i,month.to_i,day.to_i,date[0].to_i % 24,date[1].to_i,0) + date[0].to_i / 24)
+            else
+              index = 0
+              time.each do |date|
+                d = date.split('/')
+                if index == 0
+                  eventData["special"] = '開始日'
+                  index += 1
+                else
+                  eventData["special"] = '終了日'
+                end
+                if month > d[0].to_i
+                  eventTime.push(DateTime.new(year.to_i+1,d[0].to_i,d[1].to_i,0,0,0))
+                else
+                  eventTime.push(DateTime.new(year.to_i,d[0].to_i,d[1].to_i,0,0,0))
+                end
               end
             end
           end
         end
       end
-    end
-    
-    eventTime.each do |time|
-      if not existData.any?{|elm| elm["name"] == eventData["name"]} and not newData.any?{|elm| elm["name"] == eventData["name"]}
-        query = "insert into event (genre,name,url) values (\"#{eventData["genre"]}\",\"#{eventData["name"]}\",\"#{eventData["url"]}\")"
-        client.query(query)
-      end
       
-      dayStr = rubyDateToSqlDate(time.year,time.month,time.day,time.hour,time.minute,time.second)
-      
-      #今回追加したやつの名前(追加してなくても入れている
-      if not existData.any?{|elm| elm["name"] == eventData["name"] and elm["day"].to_s == dayStr + " +0900"} and not newData.any?{|elm| elm["name"] == eventData["name"] and elm["day"] == dayStr}
-        query = "insert into time (day,name,special) values ('#{dayStr}',\"#{eventData["name"]}\",\"#{eventData["special"]}\")"
-        client.query(query)
-      end
-
-      eventData["performance"].each do |perfo|  
-        if not existData.any?{|elm| elm["name"] == eventData["name"] and elm["performance"] == perfo}  and not newData.any?{|elm| elm["name"] == eventData["name"] and elm["performance"] == perfo} 
-          query = "insert into performance (name,performance) values (\"#{eventData["name"]}\",\"#{perfo}\")"
+      eventTime.each do |time|
+        if not existData.any?{|elm| elm["name"] == eventData["name"]} and not newData.any?{|elm| elm["name"] == eventData["name"]}
+          query = "insert into event (genre,name,url) values (\"#{eventData["genre"]}\",\"#{eventData["name"]}\",\"#{eventData["url"]}\")"
           client.query(query)
         end
         
-        #day,name,performanceだけ切り出して==で比較する?
-        if not existData.any?{|elm| elm["name"] == eventData["name"] and elm["performance"] == perfo and elm["day"] == eventData["day"]} and not newData.any?{|elm| elm["name"] == eventData["name"] and elm["performance"] == perfo and elm["day"] == eventData["day"]}
-          newElm = {}
-          newElm["name"] = eventData["name"]
-          newElm["performance"] = perfo
-          newElm["day"] =  dayStr
-          newData.push(newElm)
+        dayStr = rubyDateToSqlDate(time.year,time.month,time.day,time.hour,time.minute,time.second)
+        
+        #今回追加したやつの名前(追加してなくても入れている
+        if not existData.any?{|elm| elm["name"] == eventData["name"] and elm["day"].to_s == dayStr + " +0900"} and not newData.any?{|elm| elm["name"] == eventData["name"] and elm["day"] == dayStr}
+          query = "insert into time (day,name,special) values ('#{dayStr}',\"#{eventData["name"]}\",\"#{eventData["special"]}\")"
+          client.query(query)
+        end
+
+        eventData["performance"].each do |perfo|  
+          if not existData.any?{|elm| elm["name"] == eventData["name"] and elm["performance"] == perfo}  and not newData.any?{|elm| elm["name"] == eventData["name"] and elm["performance"] == perfo} 
+            query = "insert into performance (name,performance) values (\"#{eventData["name"]}\",\"#{perfo}\")"
+            client.query(query)
+          end
+          
+          #day,name,performanceだけ切り出して==で比較する?
+          if not existData.any?{|elm| elm["name"] == eventData["name"] and elm["performance"] == perfo and elm["day"] == eventData["day"]} and not newData.any?{|elm| elm["name"] == eventData["name"] and elm["performance"] == perfo and elm["day"] == eventData["day"]}
+            newElm = {}
+            newElm["name"] = eventData["name"]
+            newElm["performance"] = perfo
+            newElm["day"] =  dayStr
+            newData.push(newElm)
+          end
         end
       end
+    rescue
+      next
     end
   end                                                                    
 end                             
