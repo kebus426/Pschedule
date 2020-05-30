@@ -138,6 +138,7 @@ for num in 0..count do
         end
       end
     rescue
+      #予定表のフォーマットは統一されてないためうまく取れなかったから諦める
       next
     end
   end                                                                    
