@@ -15,9 +15,29 @@ class Rooting < Sinatra::Base
   namespace '/p-schedule' do
     get '' do
       client =  MakeClient()
+
+      @search_event_name = params.has_key?('search_event_name') && params['search_event_name'] != '' ? params['search_event_name'] : ''
+
+      genres = ["CD","webラジオ","web配信","雑誌","単行本","イベント","ニコ生"]
+      @genre_filter = []
+      genres.each do |genre|
+        if params[genre] == "on"
+            @genre_filter.push(genre)
+        end
+      end
+
+      performances = ["765","シンデレラ","ミリオン","SideM","シャイニー"]
+      @performance_filter = []
+      performances.each do |performance|
+        if params[performance] == "on"
+            @performance_filter.push(performance)
+        end
+      end
+
       @year = 0
       @month = 0
-      @spanFlag = (params.has_key?('start_year') && params['start_year'] != '') || (params.has_key?('end_year') && params['end_year'] != '')
+      @spanFlag = ((params.has_key?('start_year') && params['start_year'] != '') || (params.has_key?('end_year') && params['end_year'] != '')) || @search_event_name != '' || @genre_filter.count != 0 || @performance_filter.count != 0
+
       if @spanFlag
         if params.has_key?('start_year') && params['start_year'] != ''
           monthS = params.has_key?('start_month') && params['start_month'] != '' ? params['start_month'].to_i : 1
@@ -37,24 +57,6 @@ class Rooting < Sinatra::Base
         @month = params.has_key?('em') ? params['em'].to_i : Time.now.month
         @spanStart = DateTime.new(@year,@month,1,0,0,0)
         @spanEnd = (@spanStart >> 1)
-      end
-      
-      genres = ["CD","webラジオ","web配信","雑誌","単行本","イベント","ニコ生"]
-      @genre_filter = []
-      genres.each do |genre|
-        if params[genre] == "on"
-            @genre_filter.push(genre)
-        end
-      end
-
-      @search_event_name = params.has_key?('search_event_name') && params['search_event_name'] != '' ? params['search_event_name'] : ''
-
-      performances = ["765","シンデレラ","ミリオン","SideM","シャイニー"]
-      @performance_filter = []
-      performances.each do |performance|
-        if params[performance] == "on"
-            @performance_filter.push(performance)
-        end
       end
       
       if session[:user_id]
